@@ -1,0 +1,12 @@
+Name: Titanic
+Genre: Drama
+Duration: 312 minutes
+Hall: 1
+Showtimes: 17:50
+
+Name: Avatar
+Genre: Fantasy
+Duration: 162 minutes
+Hall: 2
+Showtimes: 12:00, 18:39
+
