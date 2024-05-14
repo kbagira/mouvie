@@ -104,7 +104,7 @@ void addMovie(movie m) {
 // Function to update movie details
 void updateMovie() {
     string movieName;
-    cout << "Enter the name of the movie you want to update: " << endl;
+    cout << "Enter the name of the movie you want to update: ";
     cin.ignore(); // Ignore the newline character in the input buffer
     getline(cin, movieName); // Allowing input with spaces
     bool found = false;
@@ -121,15 +121,18 @@ void updateMovie() {
         if (line.find("Name: ") != string::npos) {
             movie m;
             m.name = line.substr(6);
-            // Extract genre from the line and save it to m.genre
-            getline(fin, line); // Read the genre line
-            m.genre = line.substr(7); // Assuming "Genre: " is 7 characters long
-            // Read the duration line
-            getline(fin, line);
-            // Extract duration from the line and save it to m.duration
-            m.duration = stoi(line.substr(10)); // Assuming "Duration: " is 10 characters long
+            getline(fin, m.genre); // Read the genre line
+            getline(fin, line); // Read the duration line
+            m.duration = stoi(line.substr(10)); // Convert duration to integer
             getline(fin, line); // Read the hall line
+            m.hall = stoi(line.substr(6)); // Convert hall to integer
             getline(fin, line); // Read the showtimes line
+            // Parse and store showtimes
+            stringstream ss(line.substr(11)); // Create a stringstream from the showtimes string
+            string time;
+            while (getline(ss, time, ',')) {
+                m.time.push_back(time);
+            }
             tempSchedule.push_back(m); // Add the movie to temporary schedule
         }
     }
@@ -179,7 +182,7 @@ void updateMovie() {
     }
     for (int i = 0; i < tempSchedule.size(); ++i) {
         fout << "Name: " << tempSchedule[i].name << endl;
-        fout << "Genre: " << tempSchedule[i].genre << endl;
+        fout  << tempSchedule[i].genre << endl; // Write genre to file
         fout << "Duration: " << tempSchedule[i].duration << " minutes" << endl;
         fout << "Hall: " << tempSchedule[i].hall << endl;
         fout << "Showtimes: ";
@@ -197,6 +200,7 @@ void updateMovie() {
         cout << "Movie not found in the schedule." << endl;
     }
 }
+
 void removeMovie() {
     string movieName;
     cout << "Enter the name of the movie you want to remove: ";
