@@ -104,10 +104,9 @@ void addMovie(movie m) {
 // Function to update movie details
 void updateMovie() {
     string movieName;
-    cout << "Enter the name of the movie you want to update: ";
-    cin.ignore(); // Ignore newline character
-    getline(cin, movieName);
-
+    cout << "Enter the name of the movie you want to update: " << endl;
+    cin.ignore(); // Ignore the newline character in the input buffer
+    getline(cin, movieName); // Allowing input with spaces
     bool found = false;
 
     ifstream fin("schedule.txt");
@@ -118,33 +117,25 @@ void updateMovie() {
 
     string line;
     vector<movie> tempSchedule;
-
-    // While loop to read schedule.txt
     while (getline(fin, line)) {
         if (line.find("Name: ") != string::npos) {
             movie m;
             m.name = line.substr(6);
-            m.genre = line.substr(line.find("Genre: ") + 7); // Extract genre from substring
-            m.duration = stoi(line.substr(line.find("Duration: ") + 11)); // Extract duration from substring
-            // Skip genre and duration lines (unchangeable)
-            getline(fin, line); // Skip genre line
-            getline(fin, line); // Skip duration line
+            // Extract genre from the line and save it to m.genre
+            getline(fin, line); // Read the genre line
+            m.genre = line.substr(7); // Assuming "Genre: " is 7 characters long
+            // Read the duration line
+            getline(fin, line);
+            // Extract duration from the line and save it to m.duration
+            m.duration = stoi(line.substr(10)); // Assuming "Duration: " is 10 characters long
             getline(fin, line); // Read the hall line
-            m.hall = stoi(line.substr(6)); // Convert hall to integer
             getline(fin, line); // Read the showtimes line
-            // Parse and store showtimes
-            stringstream ss(line.substr(11));
-            string time;
-            while (getline(ss, time, ',')) {
-                m.time.push_back(time);
-            }
-            tempSchedule.push_back(m);
+            tempSchedule.push_back(m); // Add the movie to temporary schedule
         }
     }
-
     fin.close();
 
-    // Iterate over temporary schedule to find the movie
+    // Iterate over the temporary schedule to find the movie
     for (int i = 0; i < tempSchedule.size(); ++i) {
         if (tempSchedule[i].name == movieName) {
             found = true;
@@ -186,7 +177,6 @@ void updateMovie() {
         cerr << "Error opening output file!" << endl;
         return;
     }
-
     for (int i = 0; i < tempSchedule.size(); ++i) {
         fout << "Name: " << tempSchedule[i].name << endl;
         fout << "Genre: " << tempSchedule[i].genre << endl;
@@ -201,16 +191,12 @@ void updateMovie() {
         }
         fout << endl << endl;
     }
-
     fout.close();
 
     if (!found) {
         cout << "Movie not found in the schedule." << endl;
     }
 }
-
-
-// Function to remove a movie from the schedule
 void removeMovie() {
     string movieName;
     cout << "Enter the name of the movie you want to remove: ";
@@ -322,4 +308,5 @@ int main() {
 
     return 0;
 }
+
 
