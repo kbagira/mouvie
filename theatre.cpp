@@ -71,6 +71,28 @@ bool checkTimeConflict(const string& newStartTime, int newDuration) {
     return false;
 }
 
+bool validateShowtimes(const vector<string>& times) {
+    for (const auto& time : times) {
+        if (time.size() != 5 || time[2] != ':' ||
+            !isdigit(time[0]) || !isdigit(time[1]) ||
+            !isdigit(time[3]) || !isdigit(time[4])) {
+            return false;
+        }
+        int hour = stoi(time.substr(0, 2));
+        int minute = stoi(time.substr(3, 2));
+        if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+            return false;
+        }
+    }
+    return true;
+}
+bool validateHallNumber(int hall) {
+    return (hall > 0);
+}
+bool validateDuration(int duration) {
+    return (duration > 0 && duration <= 500);
+}
+
 // Function to add a movie to the schedule
 void addMovie(movie m) {
     // Check for time conflict before adding
@@ -265,6 +287,58 @@ void removeMovie() {
         cout << "Movie not found in the schedule." << endl;
     }
 }
+void movieReport(const string& movieName) {
+    bool found = false;
+
+    ifstream fin("schedule.txt");
+    if (!fin) {
+        cerr << "Error opening input file!" << endl;
+        return;
+    }
+
+    string line;
+    while (getline(fin, line)) {
+        if (line.find("Name: ") != string::npos) {
+            movie m;
+            m.name = line.substr(6);
+            getline(fin, m.genre); // Read the genre line
+            getline(fin, line); // Read the duration line
+            m.duration = stoi(line.substr(10)); // Convert duration to integer
+            getline(fin, line); // Read the hall line
+            m.hall = stoi(line.substr(6)); // Convert hall to integer
+            getline(fin, line); // Read the showtimes line
+            // Parse and store showtimes
+            stringstream ss(line.substr(11)); // Create a stringstream from the showtimes string
+            string time;
+            while (getline(ss, time, ',')) {
+                m.time.push_back(time);
+            }
+            if (m.name == movieName) {
+                found = true;
+                cout << "Movie Information:" << endl;
+                cout << "Name: " << m.name << endl;
+                cout << "Genre: " << m.genre << endl;
+                cout << "Duration: " << m.duration << " minutes" << endl;
+                cout << "Hall: " << m.hall << endl;
+                cout << "Showtimes: ";
+                for (size_t i = 0; i < m.time.size(); ++i) {
+                    cout << m.time[i];
+                    if (i != m.time.size() - 1) {
+                        cout << ", ";
+                    }
+                }
+                cout << endl;
+                break;
+            }
+        }
+    }
+    fin.close();
+
+    if (!found) {
+        cout << "Movie '" << movieName << "' not found in the schedule." << endl;
+    }
+}
+
 
 // Main function
 int main() {
@@ -275,7 +349,8 @@ int main() {
         cout << "1. Add a movie" << endl;
         cout << "2. Update a movie" << endl;
         cout << "3. Remove a movie" << endl;
-        cout << "4. Exit" << endl;
+        cout << "4. Movie report" << endl;
+        cout << "5. Exit" << endl;
         cout << "Enter your choice: ";
         cin >> choice;
 
@@ -287,12 +362,24 @@ int main() {
             cin >> m.genre;
             cout << "Enter the duration of the movie (in minutes): ";
             cin >> m.duration;
+            if (!validateDuration(m.duration)) {
+                cout << "Invalid duration number. Please enter a positive duration number." << endl;
+                continue;
+            }
             cout << "Enter the hall number for the movie: ";
             cin >> m.hall;
+            if (!validateHallNumber(m.hall)) {
+                cout << "Invalid hall number. Please enter a positive hall number." << endl;
+                continue;
+            }
             int numTimes;
             cout << "Enter the number of showtimes: ";
             cin >> numTimes;
             cout << "Enter showtimes for the movie (format: HH:MM): ";
+            if (!validateShowtimes(m.time)) {
+                cout << "Invalid showtimes. Please enter showtimes in HH:MM format." << endl;
+                continue;
+            }
             for (int i = 0; i < numTimes; ++i) {
                 string newTime;
                 cin >> newTime;
@@ -304,13 +391,20 @@ int main() {
         } else if (choice == 3) {
             removeMovie();
         } else if (choice == 4) {
+            string movieName;
+            cout << "Enter the name of the movie: ";
+            cin >> movieName;
+            movieReport(movieName);
+        } else if (choice == 5) {
             cout << "Exiting program." << endl;
         } else {
-            cout << "Invalid choice. Please enter a number between 1 and 4." << endl;
+            cout << "Invalid choice. Please enter a number between 1 and 5." << endl;
         }
-    } while (choice != 4);
+    } while (choice != 5);
 
     return 0;
 }
+
+
 
 
