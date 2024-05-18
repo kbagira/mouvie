@@ -11,50 +11,74 @@ struct movie {
 
 vector<movie> schedule;
 
+// Function to read schedule from file
+void readSchedule(const string& filename) {
+    ifstream fin(filename);
+    if (!fin) {
+        cerr << "Error opening input file!" << endl;
+        return;
+    }
+
+    string line;
+    while (getline(fin, line)) {
+        if (line.find("Name: ") != string::npos) {
+            movie m;
+            m.name = line.substr(6);
+            getline(fin, m.genre); // Read the genre line
+            getline(fin, line); // Read the duration line
+            m.duration = stoi(line.substr(10)); // Convert duration to integer
+            getline(fin, line); // Read the hall line
+            m.hall = stoi(line.substr(6)); // Convert hall to integer
+            getline(fin, line); // Read the showtimes line
+            stringstream ss(line.substr(11)); // Create a stringstream from the showtimes string
+            string time;
+            while (getline(ss, time, ',')) {
+                m.time.push_back(time);
+            }
+            schedule.push_back(m);
+        }
+    }
+    fin.close();
+}
+
+// Function to write schedule to file
+void writeSchedule(const string& filename) {
+    ofstream fout(filename);
+    if (!fout) {
+        cerr << "Error opening output file!" << endl;
+        return;
+    }
+    for (const movie& m : schedule) {
+        fout << "Name: " << m.name << endl;
+        fout << m.genre << endl; // Write genre to file
+        fout << "Duration: " << m.duration << " minutes" << endl;
+        fout << "Hall: " << m.hall << endl;
+        fout << "Showtimes: ";
+        for (size_t j = 0; j < m.time.size(); ++j) {
+            fout << m.time[j];
+            if (j != m.time.size() - 1) {
+                fout << ", ";
+            }
+        }
+        fout << endl << endl;
+    }
+    fout.close();
+}
+
 // Function to check for time conflict
 bool checkTimeConflict(const string& newStartTime, int newDuration) {
-    for (int i = 0; i < schedule.size(); ++i) {
-        const movie& scheduledMovie = schedule[i];
-        for (int j = 0; j < scheduledMovie.time.size(); ++j) {
-            const string& startTime = scheduledMovie.time[j];
-            int pos = -1;
-            // Find the position of ':' in the start time string
-            for (int k = 0; k < startTime.size(); ++k) {
-                if (startTime[k] == ':') {
-                    pos = k;
-                    break;
-                }
-            }
-            if (pos != -1) {
-                int existingHour = 0;
-                int existingMinute = 0;
-                for (int k = 0; k < pos; ++k) {
-                    existingHour = existingHour * 10 + (startTime[k] - '0');
-                }
-                for (int k = pos + 1; k < startTime.size(); ++k) {
-                    existingMinute = existingMinute * 10 + (startTime[k] - '0');
-                }
-                int newHour = 0;
-                int newMinute = 0;
-                pos = -1;
-                // Find the position of ':' in the new start time string
-                for (int k = 0; k < newStartTime.size(); ++k) {
-                    if (newStartTime[k] == ':') {
-                        pos = k;
-                        break;
-                    }
-                }
-                if (pos != -1) {
-                    for (int k = 0; k < pos; ++k) {
-                        newHour = newHour * 10 + (newStartTime[k] - '0');
-                    }
-                    for (int k = pos + 1; k < newStartTime.size(); ++k) {
-                        newMinute = newMinute * 10 + (newStartTime[k] - '0');
-                    }
-                    // Convert time to minutes for comparison
+    for (const movie& scheduledMovie : schedule) {
+        for (const string& startTime : scheduledMovie.time) {
+            int pos = startTime.find(':');
+            if (pos != string::npos) {
+                int existingHour = stoi(startTime.substr(0, pos));
+                int existingMinute = stoi(startTime.substr(pos + 1));
+                int newPos = newStartTime.find(':');
+                if (newPos != string::npos) {
+                    int newHour = stoi(newStartTime.substr(0, newPos));
+                    int newMinute = stoi(newStartTime.substr(newPos + 1));
                     int existingTime = existingHour * 60 + existingMinute;
                     int newTime = newHour * 60 + newMinute;
-                    // Check for time conflict
                     if ((newTime >= existingTime && newTime < existingTime + newDuration) ||
                         (existingTime >= newTime && existingTime < newTime + newDuration)) {
                         cerr << "Time Conflict: Movie is already scheduled for this time." << endl;
@@ -71,6 +95,7 @@ bool checkTimeConflict(const string& newStartTime, int newDuration) {
     return false;
 }
 
+// Function to validate showtimes
 bool validateShowtimes(const vector<string>& times) {
     for (const auto& time : times) {
         if (time.size() != 5 || time[2] != ':' ||
@@ -86,40 +111,24 @@ bool validateShowtimes(const vector<string>& times) {
     }
     return true;
 }
+
+// Function to validate hall number
 bool validateHallNumber(int hall) {
     return (hall > 0);
 }
+
+// Function to validate duration
 bool validateDuration(int duration) {
     return (duration > 0 && duration <= 500);
 }
 
 // Function to add a movie to the schedule
-void addMovie(movie m) {
-    // Check for time conflict before adding
+void addMovie(const movie& m) {
     if (checkTimeConflict(m.time[0], m.duration)) {
         cout << "Time conflict detected. The movie cannot be added." << endl;
         return;
     }
-
-    schedule.push_back(m); // Add a movie to the schedule
-    ofstream fout("schedule.txt", ios::app); // Open the file to append
-    if (!fout) {
-        cerr << "Error opening output file!" << endl;
-        return;
-    }
-    fout << "Name: " << m.name << endl;
-    fout << "Genre: " << m.genre << endl;
-    fout << "Duration: " << m.duration << " minutes" << endl;
-    fout << "Hall: " << m.hall << endl;
-    fout << "Showtimes: ";
-    for (int i = 0; i < m.time.size(); i++) {
-        fout << m.time[i];
-        if (i != m.time.size() - 1) {
-            fout << ", ";
-        }
-    }
-    fout << endl << endl;
-    fout.close();
+    schedule.push_back(m);
     cout << "Movie added successfully!" << endl;
 }
 
@@ -131,44 +140,14 @@ void updateMovie() {
     getline(cin, movieName); // Allowing input with spaces
     bool found = false;
 
-    ifstream fin("schedule.txt");
-    if (!fin) {
-        cerr << "Error opening input file!" << endl;
-        return;
-    }
-
-    string line;
-    vector<movie> tempSchedule;
-    while (getline(fin, line)) {
-        if (line.find("Name: ") != string::npos) {
-            movie m;
-            m.name = line.substr(6);
-            getline(fin, m.genre); // Read the genre line
-            getline(fin, line); // Read the duration line
-            m.duration = stoi(line.substr(10)); // Convert duration to integer
-            getline(fin, line); // Read the hall line
-            m.hall = stoi(line.substr(6)); // Convert hall to integer
-            getline(fin, line); // Read the showtimes line
-            // Parse and store showtimes
-            stringstream ss(line.substr(11)); // Create a stringstream from the showtimes string
-            string time;
-            while (getline(ss, time, ',')) {
-                m.time.push_back(time);
-            }
-            tempSchedule.push_back(m); // Add the movie to temporary schedule
-        }
-    }
-    fin.close();
-
-    // Iterate over the temporary schedule to find the movie
-    for (int i = 0; i < tempSchedule.size(); ++i) {
-        if (tempSchedule[i].name == movieName) {
+    for (movie& m : schedule) {
+        if (m.name == movieName) {
             found = true;
             char changeTime;
             cout << "Do you want to change the time for the movie? (y/n): ";
             cin >> changeTime;
             if (tolower(changeTime) == 'y') {
-                tempSchedule[i].time.clear();
+                vector<string> newTimes;
                 int numTimes;
                 cout << "Enter the number of showtimes: ";
                 cin >> numTimes;
@@ -176,53 +155,32 @@ void updateMovie() {
                 for (int j = 0; j < numTimes; ++j) {
                     string newTime;
                     cin >> newTime;
-                    // Check for time conflict before adding
-                    if (!checkTimeConflict(newTime, tempSchedule[i].duration)) {
-                        tempSchedule[i].time.push_back(newTime);
+                    if (!checkTimeConflict(newTime, m.duration)) {
+                        newTimes.push_back(newTime);
                     } else {
                         cout << "Time conflict detected. Please choose a different time." << endl;
                     }
                 }
+                m.time = newTimes;
             }
             char changeHall;
             cout << "Do you want to change the hall for the movie? (y/n): ";
             cin >> changeHall;
             if (tolower(changeHall) == 'y') {
                 cout << "Enter new hall for the movie: ";
-                cin >> tempSchedule[i].hall;
+                cin >> m.hall;
             }
             cout << "Movie details updated successfully!" << endl;
             break;
         }
     }
 
-    // Write the updated schedule back to the file
-    ofstream fout("schedule.txt");
-    if (!fout) {
-        cerr << "Error opening output file!" << endl;
-        return;
-    }
-    for (int i = 0; i < tempSchedule.size(); ++i) {
-        fout << "Name: " << tempSchedule[i].name << endl;
-        fout  << tempSchedule[i].genre << endl; // Write genre to file
-        fout << "Duration: " << tempSchedule[i].duration << " minutes" << endl;
-        fout << "Hall: " << tempSchedule[i].hall << endl;
-        fout << "Showtimes: ";
-        for (int j = 0; j < tempSchedule[i].time.size(); j++) {
-            fout << tempSchedule[i].time[j];
-            if (j != tempSchedule[i].time.size() - 1) {
-                fout << ", ";
-            }
-        }
-        fout << endl << endl;
-    }
-    fout.close();
-
     if (!found) {
         cout << "Movie not found in the schedule." << endl;
     }
 }
 
+// Function to remove a movie from the schedule
 void removeMovie() {
     string movieName;
     cout << "Enter the name of the movie you want to remove: ";
@@ -230,118 +188,53 @@ void removeMovie() {
     getline(cin, movieName); // Allowing input with spaces
     bool found = false;
 
-    ifstream fin("schedule.txt");
-    if (!fin) {
-        cerr << "Error opening input file!" << endl;
-        return;
-    }
-
-    string line;
-    vector<movie> tempSchedule;
-    while (getline(fin, line)) {
-        if (line.find("Name: ") != string::npos) {
-            movie m;
-            m.name = line.substr(6);
-            getline(fin, line); // Read the genre line
-            getline(fin, line); // Read the duration line
-            getline(fin, line); // Read the hall line
-            getline(fin, line); // Read the showtimes line
-            tempSchedule.push_back(m); // Add the movie to temporary schedule
-        }
-    }
-    fin.close();
-
-    // Iterate over the temporary schedule to find and remove the movie
-    for (vector<movie>::iterator it = tempSchedule.begin(); it != tempSchedule.end(); ++it) {
+    for (auto it = schedule.begin(); it != schedule.end(); ++it) {
         if (it->name == movieName) {
             found = true;
-            it = tempSchedule.erase(it);
+            schedule.erase(it);
             cout << "Movie removed successfully!" << endl;
             break;
         }
     }
 
-    // Write the updated schedule back to the file
-    ofstream fout("schedule.txt");
-    if (!fout) {
-        cerr << "Error opening output file!" << endl;
-        return;
-    }
-    for (int i = 0; i < tempSchedule.size(); ++i) {
-        fout << "Name: " << tempSchedule[i].name << endl;
-        fout << "Genre: " << tempSchedule[i].genre << endl;
-        fout << "Duration: " << tempSchedule[i].duration << " minutes" << endl;
-        fout << "Hall: " << tempSchedule[i].hall << endl;
-        fout << "Showtimes: ";
-        for (int j = 0; j < tempSchedule[i].time.size(); j++) {
-            fout << tempSchedule[i].time[j];
-            if (j != tempSchedule[i].time.size() - 1) {
-                fout << ", ";
-            }
-        }
-        fout << endl << endl;
-    }
-    fout.close();
-
     if (!found) {
         cout << "Movie not found in the schedule." << endl;
     }
 }
+
+// Function to generate a movie report
 void movieReport(const string& movieName) {
     bool found = false;
 
-    ifstream fin("schedule.txt");
-    if (!fin) {
-        cerr << "Error opening input file!" << endl;
-        return;
-    }
-
-    string line;
-    while (getline(fin, line)) {
-        if (line.find("Name: ") != string::npos) {
-            movie m;
-            m.name = line.substr(6);
-            getline(fin, m.genre); // Read the genre line
-            getline(fin, line); // Read the duration line
-            m.duration = stoi(line.substr(10)); // Convert duration to integer
-            getline(fin, line); // Read the hall line
-            m.hall = stoi(line.substr(6)); // Convert hall to integer
-            getline(fin, line); // Read the showtimes line
-            // Parse and store showtimes
-            stringstream ss(line.substr(11)); // Create a stringstream from the showtimes string
-            string time;
-            while (getline(ss, time, ',')) {
-                m.time.push_back(time);
-            }
-            if (m.name == movieName) {
-                found = true;
-                cout << "Movie Information:" << endl;
-                cout << "Name: " << m.name << endl;
-                cout << "Genre: " << m.genre << endl;
-                cout << "Duration: " << m.duration << " minutes" << endl;
-                cout << "Hall: " << m.hall << endl;
-                cout << "Showtimes: ";
-                for (size_t i = 0; i < m.time.size(); ++i) {
-                    cout << m.time[i];
-                    if (i != m.time.size() - 1) {
-                        cout << ", ";
-                    }
+    for (const movie& m : schedule) {
+        if (m.name == movieName) {
+            found = true;
+            cout << "Movie Information:" << endl;
+            cout << "Name: " << m.name << endl;
+            cout << "Genre: " << m.genre << endl;
+            cout << "Duration: " << m.duration << " minutes" << endl;
+            cout << "Hall: " << m.hall << endl;
+            cout << "Showtimes: ";
+            for (size_t i = 0; i < m.time.size(); ++i) {
+                cout << m.time[i];
+                if (i != m.time.size() - 1) {
+                    cout << ", ";
                 }
-                cout << endl;
-                break;
             }
+            cout << endl;
+            break;
         }
     }
-    fin.close();
 
     if (!found) {
         cout << "Movie '" << movieName << "' not found in the schedule." << endl;
     }
 }
 
-
 // Main function
 int main() {
+    readSchedule("schedule.txt");
+
     int choice;
     // Display the action menu
     do {
@@ -357,9 +250,10 @@ int main() {
         if (choice == 1) {
             movie m;
             cout << "Enter the name of the movie: ";
-            cin >> m.name;
+            cin.ignore(); // Ignore the newline character in the input buffer
+            getline(cin, m.name); // Allowing input with spaces
             cout << "Enter the genre of the movie: ";
-            cin >> m.genre;
+            getline(cin, m.genre);
             cout << "Enter the duration of the movie (in minutes): ";
             cin >> m.duration;
             if (!validateDuration(m.duration)) {
@@ -376,15 +270,17 @@ int main() {
             cout << "Enter the number of showtimes: ";
             cin >> numTimes;
             cout << "Enter showtimes for the movie (format: HH:MM): ";
-            if (!validateShowtimes(m.time)) {
-                cout << "Invalid showtimes. Please enter showtimes in HH:MM format." << endl;
-                continue;
-            }
+            vector<string> times;
             for (int i = 0; i < numTimes; ++i) {
                 string newTime;
                 cin >> newTime;
-                m.time.push_back(newTime);
+                times.push_back(newTime);
             }
+            if (!validateShowtimes(times)) {
+                cout << "Invalid showtimes. Please enter showtimes in HH:MM format." << endl;
+                continue;
+            }
+            m.time = times;
             addMovie(m);
         } else if (choice == 2) {
             updateMovie();
@@ -393,7 +289,8 @@ int main() {
         } else if (choice == 4) {
             string movieName;
             cout << "Enter the name of the movie: ";
-            cin >> movieName;
+            cin.ignore(); // Ignore the newline character in the input buffer
+            getline(cin, movieName); // Allowing input with spaces
             movieReport(movieName);
         } else if (choice == 5) {
             cout << "Exiting program." << endl;
@@ -401,6 +298,8 @@ int main() {
             cout << "Invalid choice. Please enter a number between 1 and 5." << endl;
         }
     } while (choice != 5);
+
+    writeSchedule("schedule.txt");
 
     return 0;
 }
